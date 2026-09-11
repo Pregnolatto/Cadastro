@@ -123,22 +123,25 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       <div class="itemh">${esc(it.descricao||'Item')} <span class="prod">· ${esc(it.qtd||'')} ${esc(it.unidade||'')}</span></div>
       <div class="row">
         <div><label class="fld">Preço unitário (R$)</label><input id="p_${i}" inputmode="decimal" placeholder="0,00"></div>
+        <div style="flex:0 0 96px;min-width:80px"><label class="fld">por unidade</label><input id="u_${i}" value="${esc(it.unidade||'un')}" placeholder="un/kg/pç/m" title="Em que unidade você está cotando o preço"></div>
         <div><label class="fld">IPI (%)</label><input id="ipi_${i}" value="${it.ipi!=null?esc(it.ipi):''}" inputmode="decimal" placeholder="0"></div>
         <div><label class="fld">Marca / procedência</label><input id="m_${i}" placeholder="marca ou nacional/importado"></div>
       </div>
+      <div class="muted" style="font-size:11px;margin-top:3px">Cotamos <b>${esc(it.qtd||'')} ${esc(it.unidade||'')}</b> deste item. Se você vende por outra unidade (kg, peça, metro…), ajuste o campo <b>“por unidade”</b>.</div>
       <label class="chk"><input type="checkbox" id="nf_${i}" onchange="toggleNF(${i})"> Não trabalho com este item</label>
       <label class="fld" style="margin-top:2px">Alternativa que você sugere <span class="muted">(opcional)</span></label>
       <input id="alt_${i}" placeholder="ex.: mesma peça em outra bitola / material equivalente">
       ${it.certificado?`<div style="background:#FBF3E7;border:1px solid #E4D6A6;color:#7a5a1e;border-radius:8px;padding:7px 10px;margin-top:8px;font-size:13px"><b>⚠ Certificado / laudo exigido</b> para este item.<label class="chk" style="margin:5px 0 0"><input type="checkbox" id="ce_${i}" checked> Confirmo que forneço o certificado do material com a entrega</label></div>`:''}
     </div>`).join('');
   }
-  function toggleNF(i){const nf=$('nf_'+i).checked;$('it_'+i).classList.toggle('na',nf);['p_'+i,'ipi_'+i,'m_'+i].forEach(id=>{$(id).disabled=nf;});}
+  function toggleNF(i){const nf=$('nf_'+i).checked;$('it_'+i).classList.toggle('na',nf);['p_'+i,'u_'+i,'ipi_'+i,'m_'+i].forEach(id=>{if($(id))$(id).disabled=nf;});}
   function preencher(r){
     const map={};(r.itens||[]).forEach(x=>map[x.id]=x);
     ITENS.forEach((it,i)=>{const x=map[it.id];if(!x)return;
       if($('p_'+i))$('p_'+i).value=x.preco||'';
       if($('ipi_'+i))$('ipi_'+i).value=(x.ipi!=null?x.ipi:it.ipi)||'';
       if($('m_'+i))$('m_'+i).value=x.marca||'';
+      if($('u_'+i))$('u_'+i).value=x.unidade||it.unidade||'';
       if($('alt_'+i))$('alt_'+i).value=x.alternativa||'';
       if(x.cert!=null&&$('ce_'+i))$('ce_'+i).checked=!!x.cert;
       if(x.naoFornece){$('nf_'+i).checked=true;toggleNF(i);}
@@ -150,7 +153,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   }
   async function enviar(){
     $('erro').textContent='';
-    const itens=ITENS.map((it,i)=>({id:it.id,preco:brNum($('p_'+i).value),ipi:brNum($('ipi_'+i).value),marca:$('m_'+i).value.trim(),naoFornece:$('nf_'+i).checked,alternativa:$('alt_'+i).value.trim(),certExigido:!!it.certificado,cert:it.certificado?!!($('ce_'+i)&&$('ce_'+i).checked):false}));
+    const itens=ITENS.map((it,i)=>({id:it.id,preco:brNum($('p_'+i).value),unidade:(($('u_'+i)&&$('u_'+i).value.trim())||it.unidade||''),ipi:brNum($('ipi_'+i).value),marca:$('m_'+i).value.trim(),naoFornece:$('nf_'+i).checked,alternativa:$('alt_'+i).value.trim(),certExigido:!!it.certificado,cert:it.certificado?!!($('ce_'+i)&&$('ce_'+i).checked):false}));
     const algum=itens.some(x=>x.naoFornece||x.preco);
     if(!algum){$('erro').textContent='Preencha o preço de ao menos um item (ou marque "não trabalho").';return;}
     const _dEnt=$('g_entrega').value.trim();
